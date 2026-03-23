@@ -1,10 +1,12 @@
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 import cv2
 import os
+import numpy as np
 
-MODEL_PATH = "drowiness_from_scratch.keras"
-best_model = tf.keras.models.load_model("drowiness_from_scratch.keras")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "best_mobilenetv2_drowsiness.keras")
 IMG_SIZE = 160
 
 def get_label(prediction_label):
@@ -116,3 +118,29 @@ def detect_and_annotate_states(image_bgr):
         draw_box_with_label(output, mbox, f"mouth:{mouth_label}", mouth_conf, (0, 0, 255))
 
     return output
+
+# WEBCAM DEMO: run this cell after image demo works.
+# Press 'q' in the webcam window to quit.
+def main():
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam. Make sure camera permissions are enabled.")
+
+    print("Webcam started. Press 'q' to quit.")
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+
+        annotated = detect_and_annotate_states(frame)
+        cv2.imshow("Drowsiness Demo - face/eyes/mouth", annotated)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Webcam stopped.")
+
+if __name__ == "__main__":
+    main()
