@@ -105,3 +105,28 @@ def detect_and_annotate_states(image_bgr):
         draw_box_with_label(output, mbox, f"mouth:{mouth_label}", mouth_conf, (0, 0, 255))
 
     return output
+
+def main():
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam. Make sure camera permissions are enabled.")
+
+    print("Webcam started. Press 'q' to quit.")
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+
+        annotated = detect_and_annotate_states(frame)
+        cv2.imshow("Drowsiness Demo - face/eyes/mouth", annotated)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Webcam stopped.")
+
+# Execution
+if __name__ == "__main__":
+    main()
