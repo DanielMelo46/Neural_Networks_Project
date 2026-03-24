@@ -2,27 +2,14 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 import cv2
 import os
+import numpy as np
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
-MODEL_PATH = "drowiness_from_scratch.keras"
-best_model = tf.keras.models.load_model("drowiness_from_scratch.keras")
-IMG_SIZE = 160
-
-def get_label(prediction_label):
-    if prediction_label == 0:
-        print("STAY ALERT! YOU'RE DOZING OFF!")
-        print("Yawning Detected")
-    elif prediction_label == 1:
-        print("No Yawning Detected")
-    elif prediction_label == 2:
-        print("STAY ALERT! YOU'RE DOZING OFF!")
-        print("Eyes are closed")
-    elif prediction_label == 3:
-        print("Eyes are open")
-    else:
-        raise ValueError("Invalid index")
-    
+MODEL_PATH = "best_mobilenetv2_drowsiness.keras"
+best_model = tf.keras.models.load_model(MODEL_PATH)
 
 # Class index contract from training pipeline.
+IMG_SIZE = 160
 CLASS_NAMES = {
     0: "yawn",
     1: "no_yawn",
@@ -38,8 +25,10 @@ CONFIDENCE_THRESHOLD = 0.55
 checkpoint_path = "best_mobilenetv2_drowsiness.keras"
 if os.path.exists(checkpoint_path):
     model_for_inference = load_model(checkpoint_path)
+elif "best_model" in globals():
+    model_for_inference = best_model
 else:
-    print(f"Checkpoint not found at {checkpoint_path}")
+    model_for_inference = best_model
 
 face_cascade_infer = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
 eye_cascade_infer = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_eye.xml")
@@ -116,3 +105,28 @@ def detect_and_annotate_states(image_bgr):
         draw_box_with_label(output, mbox, f"mouth:{mouth_label}", mouth_conf, (0, 0, 255))
 
     return output
+
+def main():
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise RuntimeError("Could not open webcam. Make sure camera permissions are enabled.")
+
+    print("Webcam started. Press 'q' to quit.")
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            break
+
+        annotated = detect_and_annotate_states(frame)
+        cv2.imshow("Drowsiness Demo - face/eyes/mouth", annotated)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Webcam stopped.")
+
+# Execution
+if __name__ == "__main__":
+    main()
