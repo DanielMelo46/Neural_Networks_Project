@@ -7,7 +7,7 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 st.set_page_config(page_title="Driver Drowsiness Detection", page_icon="🚗", layout="centered")
 
 st.title("🚗 Driver Drowsiness Detection System")
-st.write("Upload an image to detect whether the driver is drowsy or alert.")
+st.write("Capture an image from your webcam and detect whether the driver is drowsy or alert.")
 
 class_names = {
     0: "yawn",
@@ -15,8 +15,6 @@ class_names = {
     2: "eyes_closed",
     3: "eyes_open"
 }
-
-drowsy_classes = {"yawn", "eyes_closed"}
 
 @st.cache_resource
 def load_model():
@@ -44,15 +42,22 @@ def predict_image(image):
     pred_index = int(np.argmax(preds))
     pred_label = class_names[pred_index]
     confidence = float(preds[pred_index])
-    status = "Drowsy" if pred_label in drowsy_classes else "Alert"
+
+    yawn_prob = float(preds[0])
+    eyes_closed_prob = float(preds[2])
+
+    if yawn_prob >= 0.40 or eyes_closed_prob >= 0.40:
+        status = "Drowsy"
+    else:
+        status = "Alert"
 
     return pred_label, confidence, preds, status
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+camera_image = st.camera_input("Take a picture")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", width=300)
+if camera_image is not None:
+    image = Image.open(camera_image)
+    st.image(image, caption="Captured Image", width=300)
 
     if st.button("Run Detection"):
         pred_label, confidence, preds, status = predict_image(image)
